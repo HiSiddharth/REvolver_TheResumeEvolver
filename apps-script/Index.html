@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top"><title>Resume Revolver</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}body{background:#09090b;color:#f4f4f5;font-family:'Outfit',sans-serif;min-height:100vh;margin:0;padding:32px 16px}.card{background:rgba(24,24,27,.9);border:1px solid rgba(255,255,255,.08);box-shadow:0 25px 50px -12px rgba(0,0,0,.6);padding:32px;border-radius:20px;max-width:680px;margin:0 auto}h1{font-size:28px;margin:0;background:linear-gradient(90deg,#c084fc,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.subtitle{color:#a1a1aa;margin:6px 0 28px}.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}label{color:#a1a1aa;font-size:12px;font-weight:600;letter-spacing:.7px;text-transform:uppercase}input,textarea{width:100%;background:rgba(9,9,11,.55);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:#fff;font:inherit;padding:11px 14px;outline:none}input:focus,textarea:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.2)}textarea{min-height:300px;resize:vertical;line-height:1.5}button{background:linear-gradient(135deg,#a855f7,#3b82f6);border:0;border-radius:9px;color:#fff;cursor:pointer;float:right;font:inherit;font-weight:600;padding:12px 22px}button:disabled{cursor:wait;opacity:.65}#processing{display:none;text-align:center;padding:32px 0 12px}.spinner{width:48px;height:48px;border:3px solid rgba(139,92,246,.18);border-top-color:#8b5cf6;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 22px}#status-text{color:#e4e4e7;font-weight:500}#error-box{display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;color:#fca5a5;margin-top:18px;padding:14px;white-space:pre-wrap;word-break:break-word}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:600px){.row{grid-template-columns:1fr;gap:0}.card{padding:24px 18px}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <section id="editor">
+      <h1>Resume Revolver</h1><p class="subtitle">Review the job details, then tailor your resume.</p>
+      <div class="row">
+        <div class="field"><label for="company">Company</label><input id="company" type="text" placeholder="e.g., Google"></div>
+        <div class="field"><label for="job-title">Job title</label><input id="job-title" type="text" placeholder="e.g., Security Engineer"></div>
+      </div>
+      <div class="field"><label for="job-description">Job description</label><textarea id="job-description" placeholder="Copy or enter the full job description"></textarea></div>
+      <button id="submit" type="button">Tailor Resume</button><div style="clear:both"></div>
+    </section>
+    <section id="processing"><div class="spinner"></div><h1>Resume Revolver</h1><p id="status-text">Retrieving Career Database from Sheets...</p></section>
+    <div id="error-box"></div>
+  </main>
+  <script>
+    const serverEncoded="<?= payload ?>";
+    const loadInitialPayload=function(encoded){if(!encoded)return;try{const initialPayload=JSON.parse(decodeURIComponent(escape(atob(encoded))));jdTextarea.value=initialPayload.jobDescription||""}catch(error){errorBox.textContent="Could not decode the initial job description: "+error;errorBox.style.display="block"}};
+    const editor=document.getElementById("editor"),processing=document.getElementById("processing"),companyInput=document.getElementById("company"),titleInput=document.getElementById("job-title"),jdTextarea=document.getElementById("job-description"),submitButton=document.getElementById("submit"),statusText=document.getElementById("status-text"),errorBox=document.getElementById("error-box");
+    loadInitialPayload(serverEncoded);
+    if(!serverEncoded){
+      const localParams=new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const localEncoded=localParams.get("d");
+      if(localEncoded){
+        loadInitialPayload(localEncoded);
+      }else{
+        google.script.url.getLocation(function(location){
+          const params=new URLSearchParams(location.hash||"");
+          loadInitialPayload(params.get("d")||"");
+        });
+      }
+    }
+    const statusPhrases=["Analyzing job requirements...","Selecting relevant projects and experience...","Tailoring achievements and metrics...","Compiling the Google Docs template...","Cleaning up resume formatting..."];
+    submitButton.addEventListener("click",function(){
+      const jobDescription=jdTextarea.value.trim();
+      if(!jobDescription){errorBox.textContent="Job Description is required.";errorBox.style.display="block";jdTextarea.focus();return}
+      errorBox.style.display="none";editor.style.display="none";processing.style.display="block";submitButton.disabled=true;submitButton.textContent="Tailoring...";
+      let statusIndex=0;const statusInterval=setInterval(function(){statusText.textContent=statusPhrases[statusIndex%statusPhrases.length];statusIndex++},4000);
+      google.script.run.withSuccessHandler(function(docUrl){clearInterval(statusInterval);statusText.textContent="Complete. Opening your tailored resume...";window.location.href=docUrl}).withFailureHandler(function(error){clearInterval(statusInterval);processing.style.display="none";editor.style.display="block";submitButton.disabled=false;submitButton.textContent="Retry Tailoring";errorBox.textContent=error.toString();errorBox.style.display="block"}).runTailoringProcessFromServer(jobDescription,companyInput.value.trim(),titleInput.value.trim());
+    });
+  </script>
+</body>
+</html>
