@@ -1,0 +1,3 @@
+Notes:
+1. Import Database.csv in google sheets to get the template for the tool
+2. The attached pdf has a sample template.
