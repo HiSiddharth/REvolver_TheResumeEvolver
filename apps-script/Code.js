@@ -483,7 +483,7 @@ function callOpenRouter(jobDesc, careerDb, promptOverride) {
     contentType: 'application/json',
     headers: {
       'Authorization': 'Bearer ' + apiKey,
-      'HTTP-Referer': 'https://github.com/Sidd-Rai/REvolver',
+      'HTTP-Referer': 'https://github.com/hisiddharth/REvolver',
       'X-Title': 'Resume Revolver'
     },
     payload: JSON.stringify(payload),
